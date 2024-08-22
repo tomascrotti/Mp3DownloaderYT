@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
-from pydub import AudioSegment
+from tkinter import messagebox, filedialog
 import os
 import yt_dlp
 
@@ -27,7 +26,16 @@ class YouTubeDownloader(tk.Tk):
         
         self.btn_cancel = tk.Button(self, text="Cancelar", command=self.quit)
         self.btn_cancel.pack(side=tk.RIGHT, padx=20, pady=20)
-    
+
+        # Botón directorio
+        self.btn_path = tk.Button(self, text="Carpeta...", command=self.carpeta)
+        self.btn_path.pack(side=tk.RIGHT, padx=20, pady=20)
+
+    def carpeta(self):
+        self.directorio = filedialog.askdirectory(initialdir=r"C:\Usuarios\Usuario", title="Seleccione la carpeta")
+        if not self.directorio:
+            self.directorio = "."
+
     def centrar_ventana(self, ancho=400, alto=200):
         pantalla_ancho = self.winfo_screenwidth()
         pantalla_alto = self.winfo_screenheight()
@@ -55,7 +63,6 @@ class YouTubeDownloader(tk.Tk):
 
     def download_mp3(self):
         url = self.entrada_url.get()
-        ruta_salida = "."
         try:
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -64,7 +71,7 @@ class YouTubeDownloader(tk.Tk):
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',
                 }],
-                'outtmpl': os.path.join(ruta_salida, '%(title)s.%(ext)s'),
+                'outtmpl': os.path.join(self.directorio, '%(title)s.%(ext)s'),
                 'quiet': True,
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
