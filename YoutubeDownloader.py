@@ -1,14 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
-from pytube import YouTube
 from pydub import AudioSegment
 import os
+import yt_dlp
 
 class YouTubeDownloader(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Youtube MP3 Downloader")
-        self.geometry("400x200")
 
         # Etiqueta y campo de entrada de URL
         self.label_url = tk.Label(self, text="Ingrese la URL del video:")
@@ -23,11 +22,18 @@ class YouTubeDownloader(tk.Tk):
         self.label_nombre.pack(pady=5)
         
         # Botones de descargar y cancelar
-        self.btn_download = tk.Button(self, text="Descargar MP3", command=self.download_mp3, state=tk.DISABLED)
+        self.btn_download = tk.Button(self, text="Descargar MP3", state=tk.DISABLED, command=self.download_mp3)
         self.btn_download.pack(side=tk.LEFT, padx=20, pady=20)
         
         self.btn_cancel = tk.Button(self, text="Cancelar", command=self.quit)
         self.btn_cancel.pack(side=tk.RIGHT, padx=20, pady=20)
+    
+    def centrar_ventana(self, ancho=400, alto=200):
+        pantalla_ancho = self.winfo_screenwidth()
+        pantalla_alto = self.winfo_screenheight()
+        x = int((pantalla_ancho/2) - (self.ancho/2))
+        y = int((pantalla_alto/2) - (self.alto/2))
+        self.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     def update_nombre_video(self, event=None):
         url = self.entrada_url.get()
@@ -37,9 +43,12 @@ class YouTubeDownloader(tk.Tk):
             return
         
         try:
-            yt = YouTube(url=url)
-            self.label_nombre.config(text=yt.title)
-            self.btn_download.config(state=tk.NORMAL)
+            ydl_opts = {'quiet': True}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(url, download=False)
+                video_nombre = info_dict.get('title', None)
+                self.label_nombre.config(text=video_nombre)
+                self.btn_download.config(state=tk.NORMAL)
         except Exception as e:
             self.label_nombre.config(text=f"Error: {str(e)}")
             self.btn_download.config(state=tk.DISABLED)
@@ -48,18 +57,24 @@ class YouTubeDownloader(tk.Tk):
         url = self.entrada_url.get()
         ruta_salida = "."
         try:
-            yt = YouTube(url=url)
-            audio_video = yt.streams.filter(only_audio=True).first()
-            mp4 = audio_video.download(output_path=ruta_salida)
-            mp3 = os.path.splitext(mp4)[0] + '.mp3'
-            audio = AudioSegment.from_file(mp4)
-            audio.export(mp3, format="mp3")
-            os.remove(mp4)
-            messagebox.showinfo("Éxito",f"Descarga completa: {mp3}")
-        except Exception as e:
-            messagebox.showerror("Error",f"No se pudo descargar el video. ERROR {e}")
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'outtmpl': os.path.join(ruta_salida, '%(title)s.%(ext)s'),
+                'quiet': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
 
+            messagebox.showinfo("Éxito", "Descarga completa")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo descargar el video. Detalles: {e}")
 
 if __name__ == '__main__':
     app = YouTubeDownloader()
     app.mainloop()
+    app.centrar_ventana(400,200)
