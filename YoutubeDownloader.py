@@ -7,6 +7,7 @@ class YouTubeDownloader(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Youtube MP3 Downloader")
+        self.iconbitmap('icon.ico')
 
         # Etiqueta y campo de entrada de URL
         self.label_url = tk.Label(self, text="Ingrese la URL del video:")
